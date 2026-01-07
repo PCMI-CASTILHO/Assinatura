@@ -119,15 +119,6 @@
     document.getElementById('saveBtn').disabled = v;
   }
 
-  function saveSignature(){
-    if(isBlank()){
-      showMessage('Desenhe a assinatura do técnico.', 'error');
-      return;
-    }
-
-    setLoading(true);
-    const assinatura = canvas.toDataURL('image/png');
-
     function saveSignature(){
   if (isBlank()) {
     showMessage('Desenhe a assinatura do técnico.', 'error');
