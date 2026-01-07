@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <base target="_top">
   <title>Assinatura</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -129,24 +128,46 @@
     setLoading(true);
     const assinatura = canvas.toDataURL('image/png');
 
-    google.script.run
-      .withSuccessHandler(function () {
-        setLoading(false);
-        const formContainer = document.getElementById('formContainer');
-        if (formContainer) {
-          formContainer.innerHTML =
-            '<div class="text-center p-8 bg-green-50 rounded-lg">' +
-              '<h2 class="text-2xl font-semibold text-green-700">' +
-                'Assinatura registrada com sucesso!' +
-              '</h2>' +
-            '</div>';
-        }
+    function saveSignature(){
+  if (isBlank()) {
+    showMessage('Desenhe a assinatura do técnico.', 'error');
+    return;
+  }
+
+  setLoading(true);
+
+  const assinatura = canvas.toDataURL('image/png');
+
+  fetch('https://script.google.com/macros/s/AKfycbyCBeJ-mqcztou7Ka55OwdDA9i8fhEc7346wnB7x1XvlZPqwxL2x-vl-fuNfayzZXNf/exec', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      signature: assinatura
     })
-    .withFailureHandler(function (e) {
-      setLoading(false);
-      showMessage('Erro ao salvar: ' + e.message, 'error');
-    })
-    .saveTechSignature({ signature: assinatura });
+  })
+  .then(response => response.json())
+  .then(result => {
+    setLoading(false);
+
+    if (!result.success) {
+      throw new Error(result.error || 'Erro desconhecido');
+    }
+
+    document.getElementById('formContainer').innerHTML =
+      '<div class="text-center p-8 bg-green-50 rounded-lg">' +
+        '<h2 class="text-2xl font-semibold text-green-700">' +
+          'Assinatura registrada com sucesso!' +
+        '</h2>' +
+      '</div>';
+  })
+  .catch(error => {
+    setLoading(false);
+    showMessage('Erro ao salvar: ' + error.message, 'error');
+  });
+}
+
   }
 </script>
 </body>
