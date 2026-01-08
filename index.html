@@ -3,6 +3,7 @@
 <head>
   <title>Assinatura</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
 
@@ -79,17 +80,19 @@
       Limpar Assinatura
     </button>
 
-    <!-- FORM REAL (SEM CORS) -->
-    <form id="signatureForm"
+    <!-- FORM POST REAL (SEM CORS) -->
+    <form
+      id="signatureForm"
       method="POST"
-      action="https://script.google.com/macros/s/AKfycbyKdKb2fC2ixTXMi_TCt7rLFA959rhjNVJyv01qtn8H8c0SmHScCtqaY3YWc-xReNnj/exec">
-
+      action="https://script.google.com/macros/s/AKfycbyKdKb2fC2ixTXMi_TCt7rLFA959rhjNVJyv01qtn8H8c0SmHScCtqaY3YWc-xReNnj/exec"
+      onsubmit="return handleSubmit()"
+    >
       <input type="hidden" name="signature" id="signatureInput">
 
       <div class="flex justify-end pt-6">
-        <button type="button"
+        <button
+          type="submit"
           id="saveBtn"
-          onclick="saveSignature()"
           class="btn-primary">
           Registrar assinatura
         </button>
@@ -193,11 +196,12 @@
     document.getElementById('saveBtn').disabled = v;
   }
 
-  function saveSignature() {
+  function handleSubmit() {
     if (isBlank()) {
       messageBox.textContent = 'Desenhe a assinatura do técnico.';
-      messageBox.className = 'p-3 mt-4 text-center rounded-lg bg-red-100 text-red-800';
-      return;
+      messageBox.className =
+        'p-3 mt-4 text-center rounded-lg bg-red-100 text-red-800';
+      return false;
     }
 
     setLoading(true);
@@ -205,7 +209,7 @@
     document.getElementById('signatureInput').value =
       canvas.toDataURL('image/png');
 
-    document.getElementById('signatureForm').submit();
+    return true; // envia o POST
   }
 </script>
 
