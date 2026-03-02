@@ -34,6 +34,7 @@
       font-weight: 600;
     }
     .btn-primary:hover { background-color: #2563eb; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
     .loading-overlay {
       position: fixed;
       inset: 0;
@@ -52,6 +53,25 @@
       animation: spin 1s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    #successScreen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.25rem;
+      padding: 2rem 1rem;
+      text-align: center;
+    }
+    .checkmark-circle {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background-color: #d1fae5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
   </style>
 </head>
 
@@ -66,43 +86,38 @@
     Assinatura do Técnico
   </h1>
 
+  <!-- FORMULÁRIO -->
   <div id="formContainer" class="space-y-4">
-
     <label class="block text-sm font-medium text-gray-700">
       Assinatura do Técnico:
     </label>
 
     <canvas id="canvasTech" class="signatureCanvas"></canvas>
 
-    <button type="button"
-      onclick="clearCanvas()"
+    <button type="button" onclick="clearCanvas()"
       class="text-sm text-red-500 hover:text-red-700">
       Limpar Assinatura
     </button>
 
-    <!-- FORM POST REAL (SEM CORS) -->
-    <form
-      id="signatureForm"
-      method="POST"
-      action="https://script.google.com/macros/s/AKfycbyKdKb2fC2ixTXMi_TCt7rLFA959rhjNVJyv01qtn8H8c0SmHScCtqaY3YWc-xReNnj/exec"
-      onsubmit="return handleSubmit()"
-    >
-      <input type="hidden" name="signature" id="signatureInput">
+    <div id="messageBox" class="p-3 mt-4 text-center rounded-lg hidden"></div>
 
-      <div class="flex justify-end pt-6">
-        <button
-          type="submit"
-          id="saveBtn"
-          class="btn-primary">
-          Registrar assinatura
-        </button>
-      </div>
-    </form>
-
-    <div id="messageBox"
-      class="p-3 mt-4 text-center rounded-lg hidden">
+    <div class="flex justify-end pt-6">
+      <button type="button" id="saveBtn" onclick="handleSubmit()" class="btn-primary">
+        Registrar assinatura
+      </button>
     </div>
+  </div>
 
+  <!-- TELA DE SUCESSO -->
+  <div id="successScreen">
+    <div class="checkmark-circle">
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none"
+        stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+    </div>
+    <h2 class="text-2xl font-bold text-gray-800">Assinatura Enviada!</h2>
+    <p class="text-gray-500 text-sm">A assinatura do técnico foi registrada com sucesso.</p>
   </div>
 </div>
 
@@ -129,22 +144,15 @@
   function pos(e) {
     const r = canvas.getBoundingClientRect();
     if (e.touches) {
-      return {
-        x: e.touches[0].clientX - r.left,
-        y: e.touches[0].clientY - r.top
-      };
+      return { x: e.touches[0].clientX - r.left, y: e.touches[0].clientY - r.top };
     }
-    return {
-      x: e.clientX - r.left,
-      y: e.clientY - r.top
-    };
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
   }
 
   canvas.addEventListener('mousedown', e => {
     drawing = true;
     ({ x: lastX, y: lastY } = pos(e));
   });
-
   canvas.addEventListener('mousemove', e => {
     if (!drawing) return;
     const { x, y } = pos(e);
@@ -152,10 +160,8 @@
     ctx.moveTo(lastX, lastY);
     ctx.lineTo(x, y);
     ctx.stroke();
-    lastX = x;
-    lastY = y;
+    lastX = x; lastY = y;
   });
-
   canvas.addEventListener('mouseup', () => drawing = false);
   canvas.addEventListener('mouseout', () => drawing = false);
 
@@ -164,7 +170,6 @@
     drawing = true;
     ({ x: lastX, y: lastY } = pos(e));
   });
-
   canvas.addEventListener('touchmove', e => {
     e.preventDefault();
     if (!drawing) return;
@@ -173,10 +178,8 @@
     ctx.moveTo(lastX, lastY);
     ctx.lineTo(x, y);
     ctx.stroke();
-    lastX = x;
-    lastY = y;
+    lastX = x; lastY = y;
   });
-
   canvas.addEventListener('touchend', () => drawing = false);
 
   function clearCanvas() {
@@ -196,20 +199,39 @@
     document.getElementById('saveBtn').disabled = v;
   }
 
-  function handleSubmit() {
+  function showSuccess() {
+    document.getElementById('formContainer').style.display = 'none';
+    const s = document.getElementById('successScreen');
+    s.style.display = 'flex';
+  }
+
+  async function handleSubmit() {
     if (isBlank()) {
       messageBox.textContent = 'Desenhe a assinatura do técnico.';
-      messageBox.className =
-        'p-3 mt-4 text-center rounded-lg bg-red-100 text-red-800';
-      return false;
+      messageBox.className = 'p-3 mt-4 text-center rounded-lg bg-red-100 text-red-800';
+      messageBox.classList.remove('hidden');
+      return;
     }
 
+    messageBox.classList.add('hidden');
     setLoading(true);
 
-    document.getElementById('signatureInput').value =
-      canvas.toDataURL('image/png');
+    const formData = new FormData();
+    formData.append('signature', canvas.toDataURL('image/png'));
 
-    return true; // envia o POST
+    try {
+      await fetch(
+        'https://script.google.com/macros/s/AKfycbyKdKb2fC2ixTXMi_TCt7rLFA959rhjNVJyv01qtn8H8c0SmHScCtqaY3YWc-xReNnj/exec',
+        { method: 'POST', body: formData, mode: 'no-cors' }
+      );
+      showSuccess();
+    } catch (err) {
+      messageBox.textContent = 'Erro ao enviar. Tente novamente.';
+      messageBox.className = 'p-3 mt-4 text-center rounded-lg bg-red-100 text-red-800';
+      messageBox.classList.remove('hidden');
+    } finally {
+      setLoading(false);
+    }
   }
 </script>
 
